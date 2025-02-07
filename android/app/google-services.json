@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "400684593618",
+    "firebase_url": "https://support-medsiki-default-rtdb.firebaseio.com",
+    "project_id": "support-medsiki",
+    "storage_bucket": "support-medsiki.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:400684593618:android:8cfe09e7c780744a81180b",
+        "android_client_info": {
+          "package_name": "com.example.untitled"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "400684593618-flpss46ikvkvll85fmo88a2og0naiqvu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.untitled",
+            "certificate_hash": "430754d4bf2e3c5bf8ad82ccfde2347890b65ad5"
+          }
+        },
+        {
+          "client_id": "400684593618-82357m32a2tbatsnq7so3jk761pes2rl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEvR7Ez5gCS_iMBqJDlj0NE7Biy_0LJ_k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "400684593618-82357m32a2tbatsnq7so3jk761pes2rl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "400684593618-jshfqi2raulvcp1ejbtuml98kma0g7ec.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.untitled"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
