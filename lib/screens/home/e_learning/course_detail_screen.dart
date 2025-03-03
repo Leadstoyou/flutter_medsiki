@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:untitled/base/base._repository.dart';
@@ -11,9 +12,8 @@ import 'package:video_player/video_player.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final dynamic course;
-  final String wachingVideoId;
 
-  const CourseDetailScreen(this.course, this.wachingVideoId, {super.key});
+  const CourseDetailScreen(this.course, {super.key});
 
   @override
   State<CourseDetailScreen> createState() => _CourseDetailScreenState();
@@ -36,13 +36,18 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   Future<void> isThisCoursePaid() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
+
+    externalWatchingVideoId = await getUserWatchingVideoId();
 
     var listUserPayment = await paymentsRepository.search(
-        'user', (await getUserFromLocalStorage())?.id ?? "");
+      'user', (await getUserFromLocalStorage())?.id ?? "",
+    );
+
     if (listUserPayment.isNotEmpty) {
-      var found =
-      listUserPayment.where((element) => element['course'] == course['id']);
+      var found = listUserPayment.where((element) => element['course']['id'] == course['id']);
       setState(() {
         isBought = found.isNotEmpty;
         _isLoading = false;
@@ -58,7 +63,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   Widget build(BuildContext context) {
     List<dynamic> videosList = [];
     externalCourse = course;
-    externalWatchingVideoId = widget.wachingVideoId;
     if (course['videos'] is Map) {
       videosList = course['videos'].values.toList();
     } else if (course['videos'] is List) {
@@ -146,11 +150,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        videoTitle,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      SizedBox(
+                        width : 180,
+                        child: Text(
+                          videoTitle,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -162,7 +171,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                     ],
                   ),
                   SizedBox(
-                    width: 90,
+                    width: 60,
                     child: ElevatedButton(
                       onPressed: () =>
                       {
@@ -273,192 +282,154 @@ class FullscreenVideoPlayer extends StatefulWidget {
 }
 
 class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
-  late VideoPlayerController _controller;
-  bool _showControls = true;
-  bool _showPlayPauseIcon = false;
-  Timer? _hideControlsTimer;
-  Timer? _hidePlayPauseIconTimer;
-  bool _hasPrinted80 = false;
+  // late VideoPlayerController _controller;
 
+  bool _hasPrinted80 = false;
+  late BetterPlayerController _betterPlayerController;
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.network(widget.video['url'])
-      ..initialize().then((_) {
-        setState(() {});
-        _controller.play();
-      });
-    _controller.addListener(_checkVideoProgress);
-    SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.landscapeRight, DeviceOrientation.landscapeLeft]);
+    //  better player
+    BetterPlayerConfiguration betterPlayerConfiguration =
+    BetterPlayerConfiguration(
+      aspectRatio: 16 / 9,
+      fit: BoxFit.contain,
+      autoPlay: true,
+      looping: true,
+      controlsConfiguration: BetterPlayerControlsConfiguration(
+        enableFullscreen: true,
+        enablePlaybackSpeed: true,
+        enableProgressText: true,
+      ),
+    );
+    BetterPlayerDataSource dataSource = BetterPlayerDataSource(
+      BetterPlayerDataSourceType.network,
+      widget.video['url'] ?? "",
+    );
+    print(' BetterPlayerDataSource dataSource ::  ' +dataSource.url.toString() );
 
-    _startHideControlsTimer();
+    _betterPlayerController = BetterPlayerController(betterPlayerConfiguration);
+    _betterPlayerController.setupDataSource(dataSource);
+    _betterPlayerController.addEventsListener(_onPlayerEvent);
   }
 
-  void _checkVideoProgress() async {
-    if (!_controller.value.isInitialized) return;
+  void _onPlayerEvent(BetterPlayerEvent event) async {
+    print('_onPlayerEvent :: connected' + (event.betterPlayerEventType == BetterPlayerEventType.progress).toString());
+    if (event.betterPlayerEventType == BetterPlayerEventType.progress) {
+      print('_onPlayerEvent :: connected 1.2 ${event.betterPlayerEventType == BetterPlayerEventType.progress}');
+      print('_onPlayerEvent :: connected 2'+ (_betterPlayerController.videoPlayerController! !=null).toString() +  " and " + _betterPlayerController.videoPlayerController!.value.initialized.toString());
 
-    final duration = _controller.value.duration;
-    final position = _controller.value.position;
+      if (_betterPlayerController.videoPlayerController != null && _betterPlayerController.videoPlayerController!.value.initialized) {
+        print('_onPlayerEvent :: connected 3');
+        final duration = _betterPlayerController.videoPlayerController?.value.duration;
+        final position = _betterPlayerController.videoPlayerController?.value.position;
+        print("_onPlayerEvent :: duration.inSeconds ::" + duration!.inSeconds.toString() + " position.inSeconds ::" +
+            duration.inSeconds.toString() + "_hasPrinted80 :: ");
+        if (duration.inSeconds > 0 &&
+            position!.inSeconds >= duration.inSeconds * 0.8 &&
+            !_hasPrinted80) {
+          _hasPrinted80 = true;
+            var ref = BaseRepository<Map<String, dynamic>>('histories')
+                .getRef()
+                .child(externalWatchingVideoId)
+                .child('courses')
+                .child(externalCourse['id'])
+                .child(widget.video['index'].toString());
 
-    if (duration.inSeconds > 0 &&
-        position.inSeconds >= duration.inSeconds * 0.8 &&
-        !_hasPrinted80) {
-      _hasPrinted80 = true;
-      print(externalWatchingVideoId);
-      print(externalCourse['id']);
-      var ref = BaseRepository<Map<String, dynamic>>('histories')
-          .getRef()
-          .child(externalWatchingVideoId)
-          .child('courses')
-          .child(externalCourse['id'])
-          .child(widget.video['index'].toString());
+            var data = await ref.get();
+            if (!data.exists) {
+              var userHistory =
+              await BaseRepository<Map<String, dynamic>>('histories')
+                  .search('user', (await getUserFromLocalStorage())!.id ?? "");
+              print('userHistory $userHistory');
 
-      var data = await ref.get();
-      if (!data.exists) {
-        var userHistory =
-        await BaseRepository<Map<String, dynamic>>('histories')
-            .search('user', (await getUserFromLocalStorage())!.id ?? "");
-        print('userHistory $userHistory');
-        if (userHistory.isEmpty) {
-          await BaseRepository<Map<String, dynamic>>('histories').create({
-            'user': (await getUserFromLocalStorage())!.id ?? "",
-            'courses': {
-              externalCourse['id']: {
-                widget.video['index'].toString(): true,
+              if (userHistory.isEmpty) {
+                await BaseRepository<Map<String, dynamic>>('histories').create({
+                  'user': (await getUserFromLocalStorage())!.id ?? "",
+                  'courses': {
+                    externalCourse['id']: {
+                      widget.video['index'].toString(): true,
+                    }
+                  }
+                });
+              } else {
+                await BaseRepository<Map<String, dynamic>>('histories')
+                    .getRef()
+                    .child(userHistory[0]["id"])
+                    .child('courses')
+                    .child(externalCourse['id'])
+                    .update({
+                  widget.video['index'].toString(): true,
+                });
               }
             }
-          });
-        } else {
-          await BaseRepository<Map<String, dynamic>>('histories')
-              .getRef()
-              .child(userHistory[0]["id"])
-              .child('courses')
-              .child(externalCourse['id'])
-              .update({
-            widget.video['index'].toString(): true,
-          });
         }
       }
-      _hasPrinted80 = true;
     }
   }
+  // void _checkVideoProgress() async {
+  //   if (!_controller.value.isInitialized) return;
+  //
+  //   final duration = _controller.value.duration;
+  //   final position = _controller.value.position;
+  //
+  //   if (duration.inSeconds > 0 &&
+  //       position.inSeconds >= duration.inSeconds * 0.8 &&
+  //       !_hasPrinted80) {
+  //     _hasPrinted80 = true;
+  //     print(externalWatchingVideoId);
+  //     print(externalCourse['id']);
+  //     var ref = BaseRepository<Map<String, dynamic>>('histories')
+  //         .getRef()
+  //         .child(externalWatchingVideoId)
+  //         .child('courses')
+  //         .child(externalCourse['id'])
+  //         .child(widget.video['index'].toString());
+  //
+  //     var data = await ref.get();
+  //     if (!data.exists) {
+  //       var userHistory =
+  //       await BaseRepository<Map<String, dynamic>>('histories')
+  //           .search('user', (await getUserFromLocalStorage())!.id ?? "");
+  //       print('userHistory $userHistory');
+  //       if (userHistory.isEmpty) {
+  //         await BaseRepository<Map<String, dynamic>>('histories').create({
+  //           'user': (await getUserFromLocalStorage())!.id ?? "",
+  //           'courses': {
+  //             externalCourse['id']: {
+  //               widget.video['index'].toString(): true,
+  //             }
+  //           }
+  //         });
+  //       } else {
+  //         await BaseRepository<Map<String, dynamic>>('histories')
+  //             .getRef()
+  //             .child(userHistory[0]["id"])
+  //             .child('courses')
+  //             .child(externalCourse['id'])
+  //             .update({
+  //           widget.video['index'].toString(): true,
+  //         });
+  //       }
+  //     }
+  //     _hasPrinted80 = true;
+  //   }
+  // }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _hideControlsTimer?.cancel();
-    _hidePlayPauseIconTimer?.cancel();
-
-    SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+    _betterPlayerController.removeEventsListener(_onPlayerEvent);
+    _betterPlayerController.dispose();
     super.dispose();
   }
 
-  void _startHideControlsTimer() {
-    _hideControlsTimer?.cancel();
-    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-      setState(() {
-        _showControls = false;
-      });
-    });
-  }
-
-  void _togglePlayPause() {
-    setState(() {
-      if (_controller.value.isPlaying) {
-        _controller.pause();
-      } else {
-        _controller.play();
-      }
-      _showPlayPauseIcon = true; // Hiện nút Play/Pause khi bấm
-    });
-
-    // Tự động ẩn nút Play/Pause sau 1 giây
-    _hidePlayPauseIconTimer?.cancel();
-    _hidePlayPauseIconTimer = Timer(const Duration(seconds: 1), () {
-      setState(() {
-        _showPlayPauseIcon = false;
-      });
-    });
-
-    // Reset thời gian ẩn thanh video
-    _startHideControlsTimer();
-  }
-
-  void _onScreenTap() {
-    setState(() {
-      _showControls = !_showControls;
-      _showPlayPauseIcon = true; // Luôn hiển thị nút Play/Pause khi chạm vào
-    });
-
-    // Reset timer cho Play/Pause icon
-    _hidePlayPauseIconTimer?.cancel();
-    _hidePlayPauseIconTimer = Timer(const Duration(seconds: 1), () {
-      setState(() {
-        _showPlayPauseIcon = false;
-      });
-    });
-    _togglePlayPause();
-    if (_showControls) {
-      _startHideControlsTimer();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          GestureDetector(
-            onTap: _onScreenTap,
-            child: Center(
-              child: _controller.value.isInitialized
-                  ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: VideoPlayer(_controller),
-              )
-                  : const CircularProgressIndicator(),
-            ),
-          ),
-          if (_showPlayPauseIcon)
-            Center(
-              child: Icon(
-                _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.white,
-                size: 80,
-              ),
-            ),
-          if (_showControls)
-            Positioned(
-              top: 20,
-              left: 10,
-              child: IconButton(
-                icon: const Icon(Icons.fullscreen_exit,
-                    color: Colors.white, size: 30),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-          if (_showControls)
-            Positioned(
-              bottom: 20,
-              left: 20,
-              right: 20,
-              child: VideoProgressIndicator(
-                _controller,
-                allowScrubbing: true,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                colors: VideoProgressColors(
-                  playedColor: Colors.red,
-                  bufferedColor: Colors.grey,
-                  backgroundColor: Colors.black.withOpacity(0.4),
-                ),
-              ),
-            ),
-        ],
+      body: Center(
+        child: BetterPlayer(controller: _betterPlayerController),
       ),
     );
   }

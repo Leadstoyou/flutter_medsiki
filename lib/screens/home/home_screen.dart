@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:untitled/base/base._repository.dart';
+import 'package:untitled/screens/home/e_learning/course_detail_screen.dart';
 import 'package:untitled/screens/home/e_learning/course_list_screen.dart';
 import 'package:untitled/screens/home/mom_and_child/mom_and_child_screen.dart';
 import 'package:untitled/screens/home/onboarding/home_onboarding_screen.dart';
 import 'package:untitled/screens/home/payment/payment.dart';
+import 'package:untitled/screens/home/payment/payment_screen.dart';
 import 'package:untitled/screens/home/record/medical_record_screen.dart';
 import 'package:untitled/screens/profile/notification.dart';
 import 'package:untitled/screens/profile/profile_screen.dart';
@@ -36,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   dynamic listSuggestCourses;
   dynamic listSuggestNews;
   bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -48,8 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _isLoading = true;
     });
 
-    final courses = await courseRepository.findAll();
-    final news = await newsRepository.findAll();
+    final courses = await courseRepository.findAll(limit: 2);
+    final news = await newsRepository.findAll(limit: 2);
 
     setState(() {
       listSuggestCourses = courses;
@@ -312,11 +315,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
                   for (var course in (listSuggestCourses ?? []).take(2))
-                    _buildSuggestionCard(
-                      course['title'],
-                      course['description'],
-                      course['thumbnail'],
-                    ),
+                    _buildSuggestionCard(course['title'], course['description'],
+                        course['thumbnail'], course),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -352,10 +352,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildServiceItem('assets/images/home_road.png',
-                          'Lộ trình theo\nyêu cầu',
-                      onTapFunc: () => {
-                        navigate(context, Home('title'))
-                      },),
+                          'Lộ trình theo yêu cầu', onTapFunc: () {
+                        navigate(context, MomAndChildScreen());
+                      }),
                       _buildServiceItem(
                           'assets/images/overweight.png', 'Mẹ và bé',
                           onTapFunc: () {
@@ -416,6 +415,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       news['title'],
                       news['description'],
                       news['thumbnail'],
+                      news,
                     ),
                   // Cập nhật thông tin section
                   const SizedBox(height: 20),
@@ -489,60 +489,65 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSuggestionCard(
-      String title, String description, String imagePath) {
-    return Card(
-      elevation: 2,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: Color(0xFF990011),
-          width: 1.4,
+      String title, String description, String imagePath, Map<String,dynamic> obj) {
+    return GestureDetector(
+      onTap: () => {
+        obj['redirectLink'] != null ? openLink(obj['redirectLink']) : navigate(context, CourseDetailScreen(obj))
+      },
+      child: Card(
+        elevation: 2,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: Color(0xFF990011),
+            width: 1.4,
+          ),
         ),
-      ),
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(15.0),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 80,
-              height: 80,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.memory(
-                  base64ToBytes(imagePath),
-                  fit: BoxFit.cover,
+        margin: const EdgeInsets.only(bottom: 10),
+        child: Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.memory(
+                    base64ToBytes(imagePath),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$title\n',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Manrope SemiBold',
-                        color: Colors.black,
+              const SizedBox(width: 15),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '$title\n',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Manrope SemiBold',
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
-                    TextSpan(
-                      text: description,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Manrope ExtraLight',
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
+                      TextSpan(
+                        text: description,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Manrope ExtraLight',
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -552,36 +557,40 @@ class _HomeScreenState extends State<HomeScreen> {
       {VoidCallback? onTapFunc}) {
     return InkWell(
       onTap: onTapFunc,
-      child: Column(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD1D6),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Image.asset(
-                imagePath,
-                width: 40,
-                height: 40,
+      child: Container(
+        width: 80,
+        child: Column(
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD1D6),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Image.asset(
+                  imagePath,
+                  width: 40,
+                  height: 40,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 40,
-            child: Text(
-              text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 15,
-                  fontFamily: 'Manrope SemiBold',
-                  color: Color(0xFF990011)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 50,
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'Manrope SemiBold',
+                    color: Color(0xFF990011)),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

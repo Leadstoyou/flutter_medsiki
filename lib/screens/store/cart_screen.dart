@@ -59,7 +59,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 90,
+              height: 120,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

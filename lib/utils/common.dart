@@ -1,9 +1,14 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
+import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:untitled/base/base._repository.dart';
 import 'package:untitled/models/my_user.dart';
-
+import 'package:crypto/crypto.dart';
+import 'package:url_launcher/url_launcher.dart';
 void navigate(BuildContext context, Widget redirectScreen,
     {RouteTransitionsBuilder? transitionsBuilder ,VoidCallback? callback,}) {
   Navigator.push(
@@ -120,5 +125,75 @@ class UserDataWidget extends StatelessWidget {
         }
       },
     );
+  }
+}
+
+final BaseRepository<Map<String, dynamic>> _passwordResetRepository =
+BaseRepository<Map<String, dynamic>>('password_resets');
+Future<String> generateResetToken(String email) async {
+  final random = Random.secure();
+  final randomBytes = List<int>.generate(16, (_) => random.nextInt(256));
+  final token = base64UrlEncode(randomBytes);
+
+  final hash = sha256.convert(utf8.encode('$email$token')).toString();
+
+  final expiryTime = DateTime.now().millisecondsSinceEpoch + (15 * 60 * 1000);
+
+  await _passwordResetRepository.create({
+    "email": email,
+    "expiry": expiryTime,
+  });
+
+  return hash;
+}
+
+Future<String?> verifyResetToken(String token) async {
+  final snapshot = await  _passwordResetRepository.getRef().child(token).get();
+
+  if (!snapshot.exists) return null;
+
+  final data = snapshot.value as Map;
+  final expiry = data["expiry"] as int;
+  final email = data["email"] as String;
+
+  if (DateTime.now().millisecondsSinceEpoch > expiry) {
+    await _passwordResetRepository.getRef().child(token).remove();
+    return null;
+  }
+
+  return email; // Trả về email nếu hợp lệ
+}
+
+Future<String> createDynamicLink(String resetToken) async {
+  final DynamicLinkParameters parameters = DynamicLinkParameters(
+    uriPrefix: 'https://medmatecopy2589668344.page.link',
+    link: Uri.parse('https://medmatecopy2589668344.page.link/reset-password?token=$resetToken'),
+    androidParameters: AndroidParameters(
+      packageName: 'com.example.untitled',
+      minimumVersion: 1,
+    ),
+    iosParameters: IOSParameters(
+      bundleId: 'com.yourapp.ios',
+      minimumVersion: '1.0.1',
+    ),
+  );
+
+  final ShortDynamicLink shortLink = await FirebaseDynamicLinks.instance.buildShortLink(parameters);
+  return shortLink.shortUrl.toString();
+}
+
+
+void appLog(Object obj,String? message){
+  if (kDebugMode) {
+    print('${message ?? obj } :: ${obj.toString()}'  );
+  }
+}
+
+void openLink(String url) async {
+  final Uri uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } else {
+    throw 'Không thể mở link: $url';
   }
 }

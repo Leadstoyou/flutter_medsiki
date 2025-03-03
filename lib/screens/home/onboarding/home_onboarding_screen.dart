@@ -85,7 +85,7 @@ class _CourseDetailsScreenState extends State<HomeOnboardingScreen> {
             )),
         Positioned(
           child: SizedBox(
-            height: _screenHeight * 0.65,
+            height: double.infinity,
             width: MediaQuery.of(context).size.width,
             child: Card(
               color: Colors.white,

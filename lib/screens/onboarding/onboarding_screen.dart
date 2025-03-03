@@ -13,34 +13,36 @@ class _OnboardingScreenState extends State<OnboardingFirstScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (_currentPage != 2)
-              Align(
-                alignment: Alignment.topRight,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => WelcomeScreen()),
-                    );
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'Skip',
-                        style: TextStyle(
-                          color: Color(0xFF990011),
-                          fontSize: 20,
+      body: GestureDetector(
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_currentPage != 2)
+                Align(
+                  alignment: Alignment.topRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => WelcomeScreen()),
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          'Skip',
+                          style: TextStyle(
+                            color: Color(0xFF990011),
+                            fontSize: 20,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
- Expanded(
+              Expanded(
                 child: PageView(
                   controller: _pageController,
                   onPageChanged: (int page) {
@@ -67,36 +69,37 @@ class _OnboardingScreenState extends State<OnboardingFirstScreen> {
                   ],
                 ),
               ),
-            _buildPageIndicator(3),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_currentPage < 2) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.ease,
-                    );
-                  } else {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => WelcomeScreen()),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF93000A),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  textStyle: const TextStyle(fontSize: 18),
-                ),
-                child: Text(
-                  (_currentPage != 2) ? 'Tiếp theo' : 'Bắt Đầu',
-                  style: const TextStyle(color: Colors.white),
+              _buildPageIndicator(3),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_currentPage < 2) {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.ease,
+                      );
+                    } else {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => WelcomeScreen()),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF93000A),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                  child: Text(
+                    (_currentPage != 2) ? 'Tiếp theo' : 'Bắt Đầu',
+                    style: const TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -109,11 +112,12 @@ class _OnboardingScreenState extends State<OnboardingFirstScreen> {
         children: [
           Container(
             width: 600,
-            height: 400,
+            height: 200,
             decoration: BoxDecoration(
               image: DecorationImage(
                 image: AssetImage('assets/images/onboarding_background.png'),
-                fit: BoxFit.cover, // Điều chỉnh cách ảnh nền được hiển thị trong Container
+                fit: BoxFit
+                    .cover, // Điều chỉnh cách ảnh nền được hiển thị trong Container
               ),
             ),
             child: Center(
@@ -140,7 +144,7 @@ class _OnboardingScreenState extends State<OnboardingFirstScreen> {
             style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color:  Color(0xFF252525),
+                color: Color(0xFF252525),
                 fontFamily: 'League Spartan'),
           ),
         ],

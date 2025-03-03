@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:untitled/base/base._repository.dart';
+import 'package:untitled/screens/auth/forgot_pasword_screen.dart';
 import 'package:untitled/screens/auth/register_screen.dart';
 import 'package:untitled/screens/home/home_screen.dart';
 import 'package:untitled/utils/common.dart';
@@ -91,7 +92,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 30),
                 const Text(
                   'Email hoặc Số điện thoại',
                   style: TextStyle(
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // Handle "Forgot Password" press
+                      navigate(context, ForgotPasswordScreen());
                     },
                     child: const Text(
                       'Quên Mật Khẩu',
@@ -183,11 +183,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 30),
                 Center(
                   child: ElevatedButton(
-                    onPressed: _loginUser, // Call the login function
+                    onPressed: _loginUser,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF93000A),
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 50, vertical: 15),
                       textStyle: const TextStyle(fontSize: 18),
                     ),
                     child: const Text(
@@ -229,7 +229,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 20),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     ElevatedButton(
                       onPressed: () {
@@ -266,7 +267,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 20),
                     ElevatedButton(
                       onPressed: () async {
                         final GoogleSignInAccount? googleUser =
@@ -274,31 +274,39 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (googleUser != null) {
                           final GoogleSignInAuthentication googleAuth =
                               await googleUser.authentication;
-                    
-                          print('User Name: ${googleUser.displayName}');
-                          print('User Email: ${googleUser.email}');
-                          print('Access Token: ${googleAuth.accessToken}');
-                          print('ID Token: ${googleAuth.idToken}');
+
                           var foundUser = (await userRepository.search(
-                                  'email', googleUser.email)).first;
+                              'email', googleUser.email));
                           if (foundUser.isNotEmpty) {
                             MyUser foundMyUser =
-                                MyUser.fromJson(castToMap(foundUser));
+                                MyUser.fromJson(castToMap(foundUser.first));
                             saveUserToLocalStorage(foundMyUser);
                             navigate(context, HomeScreen());
                           } else {
                             final userData = {
                               'fullName': googleUser.displayName,
                               'email': googleUser.email,
-                              'mobile': 0123456789,
+                              'mobile': "0123456789",
                               'dob': '01/01/1900',
+                              'isActive' : true,
                             };
-                            final result = await userRepository.create(userData);
-                    
+                            final result =
+                                await userRepository.create(userData);
+
                             if (result != null) {
-                              showToast(message: 'Đăng ký thành công! , Mời đăng nhập lại');
+                              showToast(message: 'Đăng ký thành công!');
+                              var foundUser = (await userRepository.search(
+                                  'email', googleUser.email));
+                              if (foundUser.isNotEmpty) {
+                                MyUser foundMyUser =
+                                    MyUser.fromJson(castToMap(foundUser.first));
+                                saveUserToLocalStorage(foundMyUser);
+                                navigate(context, HomeScreen());
+                              }
                             } else {
-                              showToast(message: 'Đăng ký thất bại. Vui lòng thử lại.');
+                              showToast(
+                                  message:
+                                      'Đăng ký thất bại. Vui lòng thử lại.');
                             }
                           }
                         }

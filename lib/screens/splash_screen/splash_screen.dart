@@ -1,4 +1,6 @@
+import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/material.dart';
+import 'package:untitled/main.dart';
 import 'package:untitled/screens/onboarding/onboarding_screen.dart';
 import 'package:untitled/utils/local_storage.dart';
 import '../auth/welcome_screen.dart';
@@ -42,3 +44,5 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+
+

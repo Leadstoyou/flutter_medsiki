@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:untitled/models/my_user.dart';
 import 'package:untitled/screens/profile/help_center.dart';
 import 'package:untitled/screens/profile/profile_user_screen.dart';
+import 'package:untitled/screens/profile/purchase_list_screen.dart';
 import 'package:untitled/screens/profile/settings.dart';
 import 'package:untitled/utils/common.dart';
 import 'package:untitled/utils/local_storage.dart';
@@ -111,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Xử lý khi nhấn vào mục "Đã lưu"
                   }),
                   buildMenuItem('Thanh toán', Icons.payment, () {
-                    // Xử lý khi nhấn vào mục "Thanh toán"
+                    navigate(context, PurchaseListScreen());
                   }),
                   buildMenuItem('Privacy Policy', Icons.privacy_tip, () {
                     // Xử lý khi nhấn vào mục "Privacy Policy"

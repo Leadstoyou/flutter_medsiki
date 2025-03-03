@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:untitled/base/base._repository.dart';
+import 'package:untitled/screens/auth/login_screen.dart';
 import 'package:untitled/screens/auth/privacy_policy_screen.dart';
 import 'package:untitled/utils/common.dart';
 import 'package:untitled/widgets/common.dart';
 
-class SetPasswordScreen extends StatefulWidget {
-  final dynamic result; // User ID passed from the previous screen
+class ForgotPasswordSetPasswordScreen extends StatefulWidget {
+  final String email;
 
-  const SetPasswordScreen(this.result, {Key? key}) : super(key: key);
+  const ForgotPasswordSetPasswordScreen(this.email, {Key? key}) : super(key: key);
 
   @override
   _CreatePasswordScreenState createState() => _CreatePasswordScreenState();
 }
 
-class _CreatePasswordScreenState extends State<SetPasswordScreen> {
+class _CreatePasswordScreenState extends State<ForgotPasswordSetPasswordScreen> {
   bool _obscureText1 = true;
   bool _obscureText2 = true;
-  late dynamic result;
+  late String email;
 
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
@@ -26,14 +27,14 @@ class _CreatePasswordScreenState extends State<SetPasswordScreen> {
   @override
   void initState() {
     super.initState();
-    result = widget.result; // Get the user ID from the previous screen
+    email = widget.email;
   }
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildCommonAppBar(context, 'Tạo Mật Khẩu', isBack: false),
+      appBar: buildCommonAppBar(context, 'Làm mới Mật Khẩu', isBack: false),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -103,7 +104,7 @@ class _CreatePasswordScreenState extends State<SetPasswordScreen> {
             const SizedBox(height: 30),
             Center(
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   final password = _passwordController.text.trim();
                   final confirmPassword = _confirmPasswordController.text.trim();
 
@@ -116,10 +117,13 @@ class _CreatePasswordScreenState extends State<SetPasswordScreen> {
                     showToast(message: 'Passwords do not match');
                     return;
                   }
-
-                  _userRepository.update(result, {'password' : password});
-                  showToast(message: 'Thành công!');
-                  navigate(context, PivacyPolicyScreen(result));
+                  var user = await _userRepository.search('email', email);
+                  if(user.isNotEmpty){
+                    print('user[0] ${user[0]['id']}');
+                    _userRepository.update(user[0]['id'], {'password' : password});
+                    showToast(message: 'Thành công!');
+                    navigate(context, LoginScreen());
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF93000A),
@@ -127,7 +131,7 @@ class _CreatePasswordScreenState extends State<SetPasswordScreen> {
                   textStyle: const TextStyle(fontSize: 18),
                 ),
                 child: const Text(
-                  'Tạo mật khẩu',
+                  'Làm mới',
                   style: TextStyle(color: Colors.white),
                 ),
               ),

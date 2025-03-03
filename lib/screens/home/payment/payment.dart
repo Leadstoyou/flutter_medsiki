@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:flutter/services.dart';
+import 'package:untitled/utils/common.dart';
 
 import '../../../repo/payment.dart';
 
@@ -27,11 +28,12 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
+    appLog(eventChannel, 'eventChannel');
+    appLog(platform, 'platform');
     if (Platform.isIOS) {
       eventChannel.receiveBroadcastStream().listen(_onEvent as void Function(dynamic event)?, onError: _onError);
     }
   }
-
   void _onEvent(Object event) {
     print("_onEvent: '$event'.");
     if (event is Map<dynamic, dynamic>) {

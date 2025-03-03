@@ -31,7 +31,6 @@ class _CourseListScreenState extends State<CourseListScreen> {
   final BaseRepository<Map<String, dynamic>> historiesRepository =
       BaseRepository<Map<String, dynamic>>('histories');
   late var listWachingVideo;
-  late String wachingVideoId;
   var _isLoading = true;
 
   Future<List<Map<String, dynamic>>?> getListCourse() async {
@@ -97,6 +96,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
     super.initState();
     _loadCourseData();
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -115,13 +115,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
           await historiesRepository.search('user', user?.id ?? "");
 
       setState(() {
-
         if (listWachingVideos.isNotEmpty) {
           listWachingVideo = listWachingVideos[0]['courses'] ?? [];
-          wachingVideoId = listWachingVideos[0]['id'] ?? "";
         } else {
           listWachingVideo = [];
-          wachingVideoId = "";
         }
 
         listCourse = courses ?? [];
@@ -188,7 +185,8 @@ class _CourseListScreenState extends State<CourseListScreen> {
       Map<String, dynamic> course, int progress, String status) {
     return InkWell(
       onTap: () {
-        navigate(_context, CourseDetailScreen(course, wachingVideoId),callback: () async {
+        navigate(_context, CourseDetailScreen(course),
+            callback: () async {
           setState(() {
             _loadCourseData();
           });
@@ -202,9 +200,10 @@ class _CourseListScreenState extends State<CourseListScreen> {
         ),
         margin: const EdgeInsets.only(bottom: 20),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Padding(
-              padding: const EdgeInsets.all(10.0),
+              padding: const EdgeInsets.fromLTRB(8, 8, 0, 8),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10.0),
                 child: Image.memory(
@@ -215,39 +214,42 @@ class _CourseListScreenState extends State<CourseListScreen> {
                 ),
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(course['title'],
-                    style: TextStyle(
-                        fontFamily: 'Manrope Medium',
-                        fontSize: 19,
-                        color: Color(0xFF364356))),
-                SizedBox(
-                  height: 8,
-                ),
-                _getStarRate(course['star']),
-                SizedBox(
-                  height: 8,
-                ),
-                SizedBox(
-                  width: 200,
-                  child: Text(
-                    course['description'],
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        TextStyle(fontFamily: 'Manrope Medium', fontSize: 12),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: 180),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(course['title'],
+                      style: TextStyle(
+                          fontFamily: 'Manrope Medium',
+                          fontSize: 16,
+                          color: Color(0xFF364356))),
+                  SizedBox(
+                    height: 8,
                   ),
-                ),
-                SizedBox(
-                  height: 8,
-                ),
-
-                if (listWachingVideo.length != 0 )
-                  _getProgressBar(handleRenderProgressBar(
-                      listWachingVideo[course['id']], course)),
-              ],
+                  _getStarRate(course['star']),
+                  SizedBox(
+                    height: 8,
+                  ),
+                  SizedBox(
+                    width: 200,
+                    child: Text(
+                      course['description'],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontFamily: 'Manrope Medium', fontSize: 12),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 8,
+                  ),
+                  if (listWachingVideo.length != 0)
+                    _getProgressBar(handleRenderProgressBar(
+                        listWachingVideo[course['id']], course)),
+                ],
+              ),
             )
           ],
         ),
@@ -256,8 +258,8 @@ class _CourseListScreenState extends State<CourseListScreen> {
   }
 
   int handleRenderProgressBar(List? data, Map? data2) {
-
-    int tuSo = data != null ? data.where((element) => element == true).length : 0;
+    int tuSo =
+        data != null ? data.where((element) => element == true).length : 0;
     int mauSo = data2?['videos'] is List || data2?['videos'] is Map
         ? data2!['videos'].length
         : 0;
@@ -275,11 +277,15 @@ class _CourseListScreenState extends State<CourseListScreen> {
       type_txt = "Nâng Cao";
     }
     for (int i = 0; i < filledStars; i++) {
-      starWidgets.add(Icon(Icons.star, color: Colors.yellow));
+      starWidgets.add(Icon(
+        Icons.star,
+        color: Colors.yellow,
+        size: 14,
+      ));
     }
 
     for (int i = filledStars; i < 5; i++) {
-      starWidgets.add(Icon(Icons.star_border, color: Colors.yellow));
+      starWidgets.add(Icon(Icons.star_border, color: Colors.yellow, size: 14));
     }
 
     return Row(children: [
@@ -314,7 +320,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
       spacing: 4,
       children: [
         Row(
-          spacing: 15,
+          spacing: 10,
           children: [
             Text(
               '$progress%',
@@ -330,7 +336,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
           ],
         ),
         SizedBox(
-            width: 180,
+            width: 160,
             child: LinearProgressIndicator(
               value: progress / 100,
               color: progress_color,

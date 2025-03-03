@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:untitled/base/base._repository.dart';
 import 'package:untitled/models/my_user.dart';
 import 'package:untitled/screens/auth/welcome_screen.dart';
 import 'package:untitled/screens/onboarding/onboarding_screen.dart';
 
+final BaseRepository<Map<String, dynamic>> historiesRepository =
+BaseRepository<Map<String, dynamic>>('histories');
 
 Future<void> saveUserToLocalStorage(MyUser user) async {
   final prefs =  await SharedPreferences.getInstance();
@@ -38,8 +41,8 @@ Future<void> deleteUser() async {
 }
 Future<void> checkFirstTime(BuildContext  context) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isFirstTime = prefs.getBool('first_time') ?? false;
-  await Future.delayed(const Duration(seconds: 3));
+  bool isFirstTime = prefs.getBool('first_time') ?? true;
+  await Future.delayed(const Duration(seconds: 2));
   Widget redirectScreen;
 
   if (isFirstTime) {
@@ -68,4 +71,17 @@ Future<void> checkFirstTime(BuildContext  context) async {
       },
     ),
   );
+}
+
+Future<String> getUserWatchingVideoId() async{
+  late String watchingVideoId;
+
+  var listWatchingVideos = await historiesRepository.search('user', (await getUserFromLocalStorage())?.id ?? "");
+
+  if (listWatchingVideos.isNotEmpty) {
+    watchingVideoId = listWatchingVideos[0]['id'] ?? "";
+  } else {
+    watchingVideoId = "";
+  }
+  return watchingVideoId;
 }

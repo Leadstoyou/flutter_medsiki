@@ -14,6 +14,19 @@ String formatNumber(double value) {
 String formatDateTime(DateTime dateTime, String layout) {
   return DateFormat(layout).format(dateTime).toString();
 }
+String formatDateVN(String isoDate) {
+  DateTime dateTime = DateTime.parse(isoDate).toLocal(); // Chuyển về giờ máy
+  return DateFormat('dd/MM/yyyy HH:mm').format(dateTime); // 10/02/2025 03:53
+}
+bool isValidEmail(String email) {
+  final emailRegExp = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+  return emailRegExp.hasMatch(email);
+}
+
+bool isValidPhoneNumber(String phone) {
+  final phoneRegExp = RegExp(r"^(?:\+?84|0)([3|5|7|8|9])([0-9]{8})$");
+  return phoneRegExp.hasMatch(phone);
+}
 
 int transIdDefault = 1;
 String getAppTransId() {

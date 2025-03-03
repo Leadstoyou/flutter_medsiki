@@ -4,6 +4,7 @@ import 'package:untitled/screens/store/product_info_screen.dart';
 import 'package:untitled/utils/common.dart';
 import 'package:untitled/widgets/common.dart';
 import 'package:intl/intl.dart';
+
 class StoreScreen extends StatefulWidget {
   @override
   State<StoreScreen> createState() => _StoreScreenState();
@@ -11,7 +12,7 @@ class StoreScreen extends StatefulWidget {
 
 class _StoreScreenState extends State<StoreScreen> {
   final BaseRepository<Map<String, dynamic>> productsRepository =
-  BaseRepository<Map<String, dynamic>>('products');
+      BaseRepository<Map<String, dynamic>>('products');
 
   // Khởi tạo listProducts là Future
   late Future<List<Map<String, dynamic>>> listProducts;
@@ -49,7 +50,7 @@ class _StoreScreenState extends State<StoreScreen> {
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: listProducts,  // Truyền Future vào
+          future: listProducts, // Truyền Future vào
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
@@ -64,13 +65,12 @@ class _StoreScreenState extends State<StoreScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 20.0,
                   mainAxisSpacing: 20.0,
-                  childAspectRatio: 0.7,
+                  childAspectRatio: 0.65,
                 ),
                 itemCount: listProducts.length,
                 itemBuilder: (context, index) {
                   var product = listProducts[index];
                   return Container(
-                    height: 900,
                     decoration: BoxDecoration(
                       color: Color(0xFFFFD1D6),
                       borderRadius: BorderRadius.circular(10),
@@ -97,7 +97,8 @@ class _StoreScreenState extends State<StoreScreen> {
                                 width: 2,
                               ),
                               image: DecorationImage(
-                                image: MemoryImage(base64ToBytes(product['thumbnail'])),
+                                image: MemoryImage(
+                                    base64ToBytes(product['thumbnail'])),
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -130,24 +131,23 @@ class _StoreScreenState extends State<StoreScreen> {
                         SizedBox(
                           height: 10,
                         ),
-                        Flexible(
+                        Expanded(
                           child: SizedBox(
-                            width: 170,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                 Text(
-                                   "${NumberFormat.currency(locale: 'vi_VN', symbol: '').format(product['individualPrice'])}₫ -\n${NumberFormat.currency(locale: 'vi_VN', symbol: '').format(product['familyPrice'])}₫",
+                                Text(
+                                  "${NumberFormat.currency(locale: 'vi_VN', symbol: '').format(product['individualPrice'])}₫ -\n${NumberFormat.currency(locale: 'vi_VN', symbol: '').format(product['familyPrice'])}₫",
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontFamily: 'Manrope Regular',
-
                                     color: Colors.black,
                                   ),
                                 ),
                                 InkWell(
                                   onTap: () {
-                                    navigate(context, ProductInfoScreen(product));
+                                    navigate(
+                                        context, ProductInfoScreen(product));
                                   },
                                   child: Image.asset(
                                     'assets/images/bag.png',
@@ -158,6 +158,7 @@ class _StoreScreenState extends State<StoreScreen> {
                             ),
                           ),
                         ),
+
                       ],
                     ),
                   );

@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:untitled/base/base._repository.dart';
+import 'package:untitled/models/my_user.dart';
+import 'package:untitled/screens/auth/otp_verification_screen.dart';
 import 'package:untitled/screens/auth/set_password_screen.dart';
+import 'package:untitled/screens/home/home_screen.dart';
 import 'package:untitled/utils/common.dart';
 import 'package:untitled/utils/custom_input.dart';
+import 'package:untitled/utils/email_sender.dart';
+import 'package:untitled/utils/local_storage.dart';
+import 'package:untitled/utils/util.dart';
 import 'package:untitled/widgets/common.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -16,21 +23,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
-
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   final BaseRepository<Map<String, dynamic>> _userRepository =
       BaseRepository<Map<String, dynamic>>('users');
-
+  bool _isLoading = false;
   Future<void> register() async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+    });
     final fullName = _fullNameController.text.trim();
     final email = _emailController.text.trim();
     final mobile = _mobileController.text.trim();
     final dob = _dobController.text.trim();
 
     if (fullName.isEmpty || email.isEmpty || mobile.isEmpty || dob.isEmpty) {
+      setState(() {
+        _isLoading = false;
+      });
       showToast(message: 'Vui lòng điền đầy đủ thông tin');
       return;
     }
+    if (!isValidEmail(email)) {
+      setState(() {
+        _isLoading = false;
+      });
+      showToast(message: 'Email không hợp lệ');
+      return;
+    }
 
+    if (!isValidPhoneNumber(mobile)) {
+      setState(() {
+        _isLoading = false;
+      });
+      showToast(message: 'Số điện thoại không hợp lệ');
+      return;
+    }
     final userData = {
       'fullName': fullName,
       'email': email,
@@ -39,21 +67,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
     };
     final currentUser = await _userRepository.search('email', email);
     if (currentUser!.isNotEmpty) {
+      setState(() {
+        _isLoading = false;
+      });
       showToast(message: 'Tài khoản đã tồn tại');
       return;
     }
+    showToast(message: 'Đang đăng ký');
+    await sendOtpEmail(email);
+
     final result = await _userRepository.create(userData);
 
     if (result != null) {
-      showToast(message: 'Đăng ký thành công!');
-      navigate(context, SetPasswordScreen(result));
+      showToast(message: 'Gửi OTP Thành Công! Vui Lòng xác thực');
+
+      navigate(context, OtpVerificationScreen(email: email , result : result));
     } else {
       showToast(message: 'Đăng ký thất bại. Vui lòng thử lại.');
     }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: buildCommonAppBar(context, 'Đăng Ký'),
       body: SafeArea(
@@ -173,7 +212,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 20),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ElevatedButton(
                     onPressed: () {
@@ -210,10 +250,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 20),
                   ElevatedButton(
-                    onPressed: () {
-                      // Handle Google login
+                    onPressed: () async {
+                      final GoogleSignInAccount? googleUser =
+                      await _googleSignIn.signIn();
+                      if (googleUser != null) {
+                        final GoogleSignInAuthentication googleAuth =
+                        await googleUser.authentication;
+
+                        var foundUser = (await _userRepository.search(
+                            'email', googleUser.email)) ;
+                        if (foundUser.isNotEmpty) {
+                          MyUser foundMyUser =
+                          MyUser.fromJson(castToMap(foundUser.first));
+                          saveUserToLocalStorage(foundMyUser);
+                          navigate(context, HomeScreen());
+                        } else {
+                          final userData = {
+                            'fullName': googleUser.displayName,
+                            'email': googleUser.email,
+                            'mobile': "0123456789",
+                            'dob': '01/01/1900',
+                            'isActive' : true,
+                          };
+                          final result = await _userRepository.create(userData);
+
+                          if (result != null) {
+                            showToast(message: 'Đăng ký thành công!');
+                            var foundUser = (await _userRepository.search(
+                                'email', googleUser.email));
+                            if (foundUser.isNotEmpty) {
+                              MyUser foundMyUser =
+                              MyUser.fromJson(castToMap(foundUser.first));
+                              saveUserToLocalStorage(foundMyUser);
+                              navigate(context, HomeScreen());
+                            }
+                          } else {
+                            showToast(message: 'Đăng ký thất bại. Vui lòng thử lại.');
+                          }
+                        }
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,

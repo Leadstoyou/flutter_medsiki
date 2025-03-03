@@ -7,6 +7,7 @@ import 'package:untitled/base/base._repository.dart';
 import 'package:untitled/models/my_user.dart';
 import 'package:untitled/utils/common.dart';
 import 'package:untitled/utils/local_storage.dart';
+import 'package:untitled/utils/util.dart';
 import 'package:untitled/widgets/common.dart';
 
 class ProfileUserScreen extends StatefulWidget {
@@ -92,7 +93,13 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
 
   Future<void> _submitProfileUpdate() async {
     try {
-
+      if (!isValidPhoneNumber(_mobileController.text.trim())) {
+        setState(() {
+          _isLoading = false;
+        });
+        showToast(message: 'Số điện thoại không hợp lệ');
+        return;
+      }
       final updatedUser = {
         'fullName': _fullNameController.text,
         'mobile': _mobileController.text,

@@ -12,30 +12,27 @@ class BaseRepository<T> {
   DatabaseReference getRef(){
     return databaseReference;
   }
-  Future<List<Map<String, dynamic>>> findAll() async {
+  Future<List<Map<String, dynamic>>> findAll({String? lastKey, int limit = 10}) async {
     try {
-      final snapshot = await databaseReference.get();
+      Query query = databaseReference.orderByKey().limitToFirst(limit);
 
+      if (lastKey != null) {
+        query = query.startAfter(lastKey);
+      }
+
+      final snapshot = await query.get();
       if (!snapshot.exists) return [];
 
       List<Map<String, dynamic>> results = [];
+      String? newLastKey;
 
       if (snapshot.value is Map<dynamic, dynamic>) {
         Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-        results.addAll(data.entries.map((entry) {
-          return {'id': entry.key, ...entry.value};
-        }));
-      } else if (snapshot.value is List<dynamic>) {
-        List<dynamic> dataList = snapshot.value as List<dynamic>;
-        for (var item in dataList) {
-          if (item is Map<dynamic, dynamic>) {
-            results.add(item.cast<String, dynamic>());
-          } else {
-            print("Unexpected data format in list: ${item}");
-          }
-        }
-      } else {
-        print("Unexpected data format: ${snapshot.value}");
+
+        data.entries.forEach((entry) {
+          results.add({'id': entry.key, ...entry.value});
+          newLastKey = entry.key;
+        });
       }
 
       return results;

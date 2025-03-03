@@ -4,11 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:untitled/base/base._repository.dart';
 import 'package:untitled/screens/auth/account_created_screen.dart';
 import 'package:untitled/screens/home/home_screen.dart';
-import 'package:untitled/screens/store/product_info_screen.dart';
 import 'package:untitled/utils/common.dart';
 import 'package:untitled/utils/local_storage.dart';
 import 'package:untitled/widgets/common.dart';
-
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 class HomeOnboardingDetailScreen extends StatefulWidget {
   final dynamic course;
 
@@ -26,6 +27,63 @@ class _HomeOnboardingDetailScreenState
       BaseRepository<Map<String, dynamic>>('payments');
   final BaseRepository<Map<String, dynamic>> historiesRepository =
       BaseRepository<Map<String, dynamic>>('histories');
+  bool isButtonEnable = true;
+  Map<String, dynamic>? paymentIntent;
+
+  Future<bool> makePayment(int money) async {
+    try {
+      setState(() {
+        isButtonEnable = !isButtonEnable;
+      });
+      paymentIntent = await createPaymentIntent((money / 25000 * 100).toInt().toString(), "usd");
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: paymentIntent!['client_secret'],
+          merchantDisplayName: "Medsiki",
+          googlePay: PaymentSheetGooglePay(
+            merchantCountryCode: "VN",
+            testEnv: true, // Bật chế độ test
+          ),
+        ),
+      );
+
+      await Stripe.instance.presentPaymentSheet();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Center(child: Text("Thanh toán thành công!"))),
+      );
+      setState(() {
+        isButtonEnable = !isButtonEnable;
+      });
+      return true;
+    } catch (e) {
+      setState(() {
+        isButtonEnable = !isButtonEnable;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Center(child: Text("Lỗi thanh toán"))),
+      );
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> createPaymentIntent(String amount, String currency) async {
+    final response = await http.post(
+      Uri.parse("https://api.stripe.com/v1/payment_intents"),
+      headers: {
+        "Authorization": "Bearer sk_test_51QxKABQ2GPSXqnNu4G8yMsr9rDvNbT1XLKWlSKSCWhcTmCLM7ulbKckIOFGKssPf9fTkFvNBE6mjYbGpTtHVg3Ng00m7XOI1AN", // Thay bằng Secret Key
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: {
+        "amount": amount,
+        "currency": currency,
+        "payment_method_types[]": "card",
+      },
+    );
+
+    return jsonDecode(response.body);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,44 +168,21 @@ class _HomeOnboardingDetailScreenState
             Padding(
                 padding: const EdgeInsets.only(top: 55),
                 child: ElevatedButton(
-                  onPressed: () async {
-                    await paymentsRepository.create({
-                      'user': (await getUserFromLocalStorage())?.id,
-                      'orderAt': DateTime.now().toIso8601String(),
-                      'course': course['id'],
-                      'paid': course['price']
-                    });
-                    // var list = await historiesRepository.search(
-                    //     'user', (await getUserFromLocalStorage())!.id ?? "");
-                    // if (list.isEmpty) {
-                    //   var data = await historiesRepository.create({
-                    //     'user': (await getUserFromLocalStorage())!.id ?? "",
-                    //     'courses': {
-                    //       course['id']: {
-                    //         'isPaid': true,
-                    //       }
-                    //     }
-                    //   });
-                    // } else {
-                    //   print(list[0]['courses']);
-                    //   var a = list[0]['courses'];
-                    //   if (a[course['id']] == null) {
-                    //     a[course['id']] = {};
-                    //   }
-                    //   a[course['id']]['isPaid'] = true;
-                    //   list[0].update('courses', (_) => a);
-                    // }
 
-                    Fluttertoast.showToast(
-                      msg: 'Thanh toán thành công',
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.BOTTOM,
-                      backgroundColor: Colors.blue,
-                      textColor: Colors.white,
-                      fontSize: 16.0,
-                    );
-                    navigate(context, HomeScreen());
-                  },
+                  onPressed: isButtonEnable ?  () async {
+                    if(await makePayment(course['price'])){
+                      await paymentsRepository.create({
+                        'user': (await getUserFromLocalStorage())?.id,
+                        'orderAt': DateTime.now().toIso8601String(),
+                        'course': {
+                          'id' : course['id'],
+                          'title' :course['title']
+                        },
+                        'paid': course['price']
+                      });
+                      navigate(context, HomeScreen());
+                    }
+                  } : null ,
                   style: ButtonStyle(
                       minimumSize:
                           WidgetStateProperty.all(Size(double.infinity, 60)),

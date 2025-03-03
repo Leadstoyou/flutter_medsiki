@@ -4,6 +4,7 @@ import 'package:untitled/models/my_user.dart';
 import 'package:untitled/screens/store/payment_success_screen.dart';
 import 'package:untitled/utils/common.dart';
 import 'package:untitled/utils/local_storage.dart';
+import 'package:untitled/utils/util.dart';
 import 'package:untitled/widgets/common.dart';
 
 class PaymentInfoScreen extends StatefulWidget {
@@ -306,12 +307,12 @@ class _PaymentInfoScreenState extends State<PaymentInfoScreen> {
     );
   }
 
+
   Future<dynamic> updateUser(dynamic updatedData) async {
     if (_user.id != null && _user.id!.isNotEmpty) {
       return await userRepository.update(_user.id!, updatedData);
     }
   }
-
   void _showEditAddressDialog(String title, String phone, String address) {
     _nameController.text = title;
     _phoneController.text = phone;
@@ -352,7 +353,10 @@ class _PaymentInfoScreenState extends State<PaymentInfoScreen> {
                 String name = _nameController.text;
                 String phone = _phoneController.text;
                 String address = _addressController.text;
-
+                if (!isValidPhoneNumber(_phoneController.text.trim())) {
+                  showToast(message: 'Số điện thoại không hợp lệ');
+                  return;
+                }
                 setState(() {
                   addresses[_selectedAddress] = {
                     'title': name,
