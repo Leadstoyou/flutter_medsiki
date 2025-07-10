@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:untitled/base/base._repository.dart';
 import 'package:untitled/utils/util.dart';
+import 'package:untitled/widgets/Constant.dart';
 import 'package:untitled/widgets/common.dart';
 
 import '../../utils/local_storage.dart';
@@ -73,10 +74,23 @@ class _PurchaseListScreenState extends State<PurchaseListScreen> {
                     isProduct ? purchase['product']['product']['title'] : "${purchase['course']['title']}",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text(
-                        "Ngày mua: ${formatDateVN(purchase['orderAt']) } ${isProduct ? "\n Số lượng: ${purchase['product']['quantity']} " : ""}",
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Ngày mua: ${formatDateVN(purchase['orderAt'])}"
+                            "${isProduct ? "\nSố lượng: ${purchase['product']['quantity']}" : ""}",
+                      ),
+                      if (isProduct) // ✅ Nếu là `product`, hiển thị trạng thái
+                        Text(
+                          "Trạng thái: ${getOrderStatusText(purchase['status'])}",
+                          style: TextStyle(
+                            color: getOrderStatusColor(purchase['status']),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
                   ),
-
                   trailing: isProduct
                       ? Text(
                     "Giá: ${purchase['product']['totalPrice']} ₫",

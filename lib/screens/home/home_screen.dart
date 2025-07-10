@@ -375,7 +375,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
 
-                  // Tin tức section
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -540,7 +539,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontFamily: 'Manrope ExtraLight',
                           fontWeight: FontWeight.w500,
                           color: Colors.black,
+
                         ),
+
                       ),
                     ],
                   ),

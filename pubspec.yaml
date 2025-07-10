@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  app_links : ^6.3.2
   shared_preferences: ^2.0.15
   google_maps_flutter: ^2.1.1
   firebase_auth: ^5.4.0
@@ -48,6 +49,15 @@ dependencies:
   loading_animation_widget: ^1.3.0
   sprintf: ^7.0.0
   mailer: ^6.1.0
+  go_router: ^5.0.5
+  url_strategy: ^0.2.0
+  qr_flutter: ^4.1.0
+  flutter_dotenv: ^5.1.0
+  screenshot: ^3.0.0
+  socket_io_client: ^2.0.3+1
+  webview_flutter: ^4.2.4
+  device_info_plus: ^9.1.0
+  flutter_facebook_auth: ^6.0.4
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -151,6 +161,7 @@ flutter:
     - assets/images/medical_record_vaccine.png
     - assets/images/medical_record_xet_nghiem.png
     - assets/images/medical_record_benh_nen.png
+    - .env
 flutter_icons:
   android: true
   ios: true

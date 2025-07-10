@@ -1,17 +1,22 @@
+import 'dart:developer';
+
+import 'package:app_links/app_links.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:go_router/go_router.dart';
+import 'package:untitled/route/route_config.dart';
 import 'package:untitled/screens/auth/reset_password_screen.dart';
+import 'package:untitled/screens/payment/payment_screen.dart';
+import 'package:untitled/screens/payment/result_screen.dart';
 import 'package:untitled/utils/local_storage.dart';
 import 'base/base._repository.dart';
 import 'screens/splash_screen/splash_screen.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:untitled/models/my_user.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (kIsWeb) {
@@ -33,7 +38,9 @@ void main() async {
       persistenceEnabled: true,
     );
   }
-  Stripe.publishableKey = "pk_test_51QxKABQ2GPSXqnNuLcfXMLe20Vi3O2x5HNMtpIyg9y13MRXZGFFxzDBw6ZjRx0Owocy3Nt9yn6zAf7mnIuf0YWk700WGWAqvGD";
+  await dotenv.load(fileName: ".env");
+  print('Ứng dụng đã bắt đầu');
+  print(dotenv.env['ORDER_URL']);
   runApp(const MyApp());
 }
 
@@ -45,18 +52,67 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> {
+  final _appLinks = AppLinks(); // Singleton AppLinks
+  Uri? _initialUri;
 
   @override
   void initState() {
     super.initState();
+    _initDeepLinkListener();
   }
+
+  void _initDeepLinkListener() {
+    // Lắng nghe tất cả các sự kiện deep link (bao gồm initial link và stream)
+    _appLinks.uriLinkStream.listen((Uri? uri) {
+      if (uri != null && mounted) {
+        _handleDeepLink(uri);
+      }
+    }, onError: (err) {
+      log('Error listening to deep link: $err');
+    });
+
+    // Kiểm tra initial link khi ứng dụng khởi động
+    _appLinks.getInitialLink().then((Uri? uri) {
+      if (uri != null) {
+        _initialUri = uri;
+      }
+    });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      log('Deep link received: ${uri.toString()}');
+      final path = uri.path;
+      final queryParams = uri.queryParameters;
+
+      if (path == '/' || path == '/result' || uri.toString().contains('payosdemoflutter/result')) {
+        final status = queryParams['status'] ?? 'unknown';
+        log('Navigating to result screen with status: $status');
+        Future.microtask(() {
+          appRouter.go(RoutePaths.onboardingFirstScreen);
+        });
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
+      routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.red),
-      home: SplashScreen(),
+      builder: (context, child) {
+        if (_initialUri != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _handleDeepLink(_initialUri!);
+              _initialUri = null;
+            }
+          });
+        }
+        return child!;
+      },
     );
   }
 }

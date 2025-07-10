@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled/base/base._repository.dart';
 import 'package:untitled/models/my_user.dart';
@@ -38,39 +39,6 @@ Future<void> deleteUser() async {
   } catch (e) {
     print('Lỗi khi xóa user: $e');
   }
-}
-Future<void> checkFirstTime(BuildContext  context) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isFirstTime = prefs.getBool('first_time') ?? true;
-  await Future.delayed(const Duration(seconds: 2));
-  Widget redirectScreen;
-
-  if (isFirstTime) {
-    await prefs.setBool('first_time', false);
-    redirectScreen = OnboardingFirstScreen();
-  } else {
-    redirectScreen = WelcomeScreen();
-  }
-
-  Navigator.pushReplacement(
-    context,
-    PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => redirectScreen,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var begin = Offset(1.0, 0.0);
-        var end = Offset.zero;
-        var curve = Curves.ease;
-
-        var tween =
-        Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
-      },
-    ),
-  );
 }
 
 Future<String> getUserWatchingVideoId() async{

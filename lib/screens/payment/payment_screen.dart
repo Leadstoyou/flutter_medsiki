@@ -1,0 +1,454 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:untitled/widgets/transfer_info.dart';
+import 'package:untitled/widgets/order_detail.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:typed_data';
+import 'package:untitled/widgets/checkout_status_order.dart';
+import 'package:untitled/api/payos_api.dart';
+
+class PaymentSreen extends StatefulWidget {
+  const PaymentSreen({
+    super.key,
+    required this.orderCode,
+    required this.accountNumber,
+    required this.accountName,
+    required this.amount,
+    required this.bin,
+    required this.description,
+    required this.qrCode,
+    required this.courseId,
+  });
+  final String orderCode;
+  final String accountNumber;
+  final String accountName;
+  final String amount;
+  final String description;
+  final String qrCode;
+  final String bin;
+  final String courseId;
+  @override
+  State<StatefulWidget> createState() {
+    return _PaymentSreen();
+  }
+}
+
+class _PaymentSreen extends State<PaymentSreen> {
+  final _screenshotController = ScreenshotController();
+  var _status = false;
+  //socket
+
+  void cancelOrderClick() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            "Hủy thanh toán",
+            textAlign: TextAlign.center,
+          ),
+          content: const Text(
+            "Quý khách có muốn hủy giao dịch này?",
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Đóng thông báo
+              },
+              child: const Text(
+                "Đóng",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                //Thoát phòng
+                // socket.emit("leaveOrderRoom", widget.orderCode);
+                cancelOrder(widget.orderCode);
+                if (!mounted) return;
+                context.go(Uri(path: '/result', queryParameters: {
+                  "orderCode": widget.orderCode,
+                }).toString());
+              },
+              child: const Text(
+                "Xác nhận hủy",
+                style: TextStyle(color: Color.fromARGB(255, 192, 71, 62)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _captureAndSaveQRCode() async {
+    final permissionStatus = await Permission.storage.status;
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+
+    //Yêu cầu quyền lưu ảnh ở điện thoại
+    if (androidInfo.version.sdkInt >= 33) {
+      await Permission.photos.request();
+    } else {
+      if (permissionStatus.isDenied) {
+        // Here just ask for the permission for the first time
+        await Permission.storage.request();
+
+        // I noticed that sometimes popup won't show after user press deny
+        // so I do the check once again but now go straight to appSettings
+        if (permissionStatus.isDenied) {
+          await openAppSettings();
+        }
+      } else if (permissionStatus.isPermanentlyDenied) {
+        // Here open app settings for user to manually enable permission in case
+        // where permission was permanently denied
+        await openAppSettings();
+      } else {
+        // Do stuff that require permission here
+      }
+    }
+    //Thực hiện lưu ảnh
+    final Uint8List? image = await _screenshotController.capture();
+    if (image != null) {
+
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Lưu ảnh thành công!"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Đóng thông báo
+                },
+                child: const Text("Đóng"),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Lỗi"),
+            content: const Text("Lưu ảnh thất bại"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Đóng thông báo
+                },
+                child: const Text("Đóng"),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchData() async {
+    var order = await getOrder(widget.orderCode);
+    var bankList = await getBankList();
+
+    List<Map<String, dynamic>> bankListAsMaps =
+        List<Map<String, dynamic>>.from(bankList["data"]);
+    Map<String, dynamic> matchedBank =
+        bankListAsMaps.firstWhere((bank) => bank["bin"] == widget.bin);
+    return {"order": order, "bank": matchedBank};
+  }
+
+  int calculateSumAmount(List<dynamic> items) {
+    //Tính toán ở đây
+    return 1000;
+  }
+
+  void onPressedQrImage() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(30),
+            child: Container(
+              decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(5))),
+              child: Column(
+                children: [
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+                    child: DefaultTextStyle(
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color.fromARGB(255, 131, 131, 131),
+                      ),
+                      textAlign: TextAlign.center,
+                      child: Text(
+                          "Sử dụng một Ứng dụng Ngân hàng bất kỳ để quét mã VietQR."),
+                    ),
+                  ),
+                  Padding(
+                      padding: const EdgeInsets.all(40),
+                      child: Screenshot(
+                        controller: _screenshotController,
+                        child: Container(
+                            decoration: const BoxDecoration(
+                                color: Color.fromARGB(255, 223, 219, 231),
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(5))),
+                            child: QrCode(250)),
+                      )),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.grey.shade300)),
+                          onPressed: () async {
+                            await _captureAndSaveQRCode();
+                          },
+                          icon: const Icon(
+                            Icons.downloading,
+                          ),
+                          label: const Text("Tải về")),
+                      const SizedBox(
+                        width: 20,
+                      ),
+                      OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.grey.shade300)),
+                          onPressed: () {},
+                          icon: const Icon(
+                            Icons.share,
+                          ),
+                          label: const Text("Chia sẻ")),
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.fromLTRB(40, 0, 40, 0)),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text("Đóng"))
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+        future: fetchData(),
+        builder: (BuildContext context,
+            AsyncSnapshot<Map<String, dynamic>> snapshot) {
+          var res = snapshot.data;
+          print('res ${res}');
+          var orderDetailListData = [{
+            "name" : widget.description,
+            "price" : widget.amount,
+            "quantity" : 1,
+          }];
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(
+                backgroundColor: Colors.white,
+                color: Colors.indigo,
+              ),
+            );
+          } else if (snapshot.hasError || res?["order"]["error"] != 0) {
+            //Xử lý lỗi gọi Api ở đây
+            return const Text('');
+          }
+          return Scaffold(
+              body: SafeArea(
+            child: SingleChildScrollView(
+                child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 20, 8, 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Chi tiết đơn hàng',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  OrderDetail(
+                    items : orderDetailListData,
+                  ),
+                  Container(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 5, 15, 10),
+                      child: Text(
+                        // "Tổng tiền:      ${calculateSumAmount(res?["data"]["amount"])} vnd",
+                        "Tổng tiền:   ${widget.amount} vnd",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  ),
+                  const Text(
+                    "Thông tin chuyển khoản",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color.fromARGB(
+                                255, 168, 161, 161), // Màu của border
+                            width: 0.5, // Độ rộng của border
+                          ),
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(10))),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          Container(
+                            width: MediaQuery.of(context).size.width,
+                            color: const Color.fromARGB(255, 130, 147, 240),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+                              child: Row(
+                                children: [
+                                  Image.network("${res?["bank"]["logo"]}",
+                                      width: 100),
+                                  const SizedBox(
+                                    width: 5,
+                                  ),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text("${res?["bank"]["name"]}",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: null),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        // ignore: unnecessary_string_interpolations
+                                        "${widget.accountName}",
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          TransferInfo(
+                            accountNumber: widget.accountNumber,
+                            amount: widget.amount,
+                            description: widget.description,
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(20, 0, 20, 10),
+                            child: Text(
+                              "Mở App Ngân hàng bất kỳ để quét mã VietQR hoặc chuyển khoản chính xác nội dung bên trên",
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.all(0),
+                                  backgroundColor:
+                                      const Color.fromARGB(255, 223, 219, 231),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5),
+                                  )),
+                              onPressed: onPressedQrImage,
+                              child: QrCode(200)),
+                          NoticeWidget(),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ElevatedButton(
+                                onPressed: cancelOrderClick,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.deepPurple.shade400,
+                                  // Màu nền
+                                ),
+                                child: const Text(
+                                  "Hủy thanh toán",
+                                  style: TextStyle(color: Colors.white),
+                                )),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
+          ));
+        });
+  }
+
+  Padding NoticeWidget() {
+    return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+        child: Column(
+          children: [
+            CheckStatusOrder(orderCode: widget.orderCode ,courseId : widget.courseId , coursePrice: widget.amount, courseTitle: widget.description,),
+            const SizedBox(
+              height: 10,
+            ),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                text: 'Lưu ý : Nhập chính xác nội dung ',
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 14,
+                ),
+                children: <TextSpan>[
+                  TextSpan(
+                      text: widget.description,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const TextSpan(text: ' khi chuyển khoản!'),
+                ],
+              ),
+            ),
+          ],
+        ));
+  }
+
+  // ignore: non_constant_identifier_names
+  QrImageView QrCode(double size) {
+    return QrImageView(
+      data: widget.qrCode,
+      version: QrVersions.auto,
+      size: size,
+      dataModuleStyle: const QrDataModuleStyle(
+          color: Color.fromRGBO(37, 23, 78, 1),
+          dataModuleShape: QrDataModuleShape.circle),
+      eyeStyle: const QrEyeStyle(
+        eyeShape: QrEyeShape.square,
+        color: Colors.black,
+      ),
+    );
+  }
+}

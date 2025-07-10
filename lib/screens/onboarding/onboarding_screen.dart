@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:untitled/screens/auth/welcome_screen.dart';
+import 'package:untitled/utils/common.dart';
 
 class OnboardingFirstScreen extends StatefulWidget {
   @override
@@ -80,10 +81,7 @@ class _OnboardingScreenState extends State<OnboardingFirstScreen> {
                         curve: Curves.ease,
                       );
                     } else {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => WelcomeScreen()),
-                      );
+                      navigate(context, WelcomeScreen());
                     }
                   },
                   style: ElevatedButton.styleFrom(

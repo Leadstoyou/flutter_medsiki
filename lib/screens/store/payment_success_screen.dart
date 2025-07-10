@@ -3,6 +3,7 @@ import 'package:untitled/base/base._repository.dart';
 import 'package:untitled/screens/home/home_screen.dart';
 import 'package:untitled/utils/common.dart';
 import 'package:untitled/utils/local_storage.dart';
+import 'package:untitled/widgets/Constant.dart';
 import 'package:untitled/widgets/common.dart';
 
 class PaymentSuccessScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
       'user': (await getUserFromLocalStorage())?.id,
       'address': widget.address,
       'orderAt': DateTime.now().toIso8601String(),
+      'status' : OrderStatus.pending,
     });
   }
   @override

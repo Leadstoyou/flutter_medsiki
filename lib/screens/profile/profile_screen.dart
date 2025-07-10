@@ -114,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   buildMenuItem('Thanh toán', Icons.payment, () {
                     navigate(context, PurchaseListScreen());
                   }),
-                  buildMenuItem('Privacy Policy', Icons.privacy_tip, () {
+                  buildMenuItem('Chính sách', Icons.privacy_tip, () {
                     // Xử lý khi nhấn vào mục "Privacy Policy"
                   }),
                   buildMenuItem('Cài đặt', Icons.settings, () {

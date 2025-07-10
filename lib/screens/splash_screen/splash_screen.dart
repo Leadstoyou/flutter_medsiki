@@ -1,12 +1,12 @@
-import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/material.dart';
-import 'package:untitled/main.dart';
-import 'package:untitled/screens/onboarding/onboarding_screen.dart';
-import 'package:untitled/utils/local_storage.dart';
-import '../auth/welcome_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:untitled/route/route_config.dart';
+
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
@@ -15,9 +15,24 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    checkFirstTime(context);
+    _checkFirstTime();
   }
 
+  Future<void> _checkFirstTime() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isFirstTime = prefs.getBool('first_time') ?? true;
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    if (isFirstTime) {
+      await prefs.setBool('first_time', false);
+      context.go(RoutePaths.onboardingFirstScreen);
+    } else {
+      context.go(RoutePaths.welcomeScreen);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,5 +59,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-
-

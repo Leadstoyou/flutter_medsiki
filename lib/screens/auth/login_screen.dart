@@ -242,6 +242,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           textColor: Colors.white,
                           fontSize: 16.0,
                         );
+                        // try {
+                        //   final LoginResult result = await FacebookAuth.instance.login(
+                        //     permissions: ['public_profile', 'email'],
+                        //   );
+                        //   if (result.status == LoginStatus.success) {
+                        //     final userData = await FacebookAuth.instance.getUserData();
+                        //     setState(() {
+                        //       print("userData ${userData}");
+                        //     });
+                        //     print("Email: ${userData['email']}");
+                        //   } else {
+                        //     print("Đăng nhập thất bại: ${result.message}");
+                        //   }
+                        // } catch (e) {
+                        //   print("Lỗi: $e");
+                        // }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
